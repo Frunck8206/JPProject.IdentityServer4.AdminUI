@@ -1,13 +1,14 @@
-import { Component, OnInit, ViewEncapsulation } from "@angular/core";
-import { TranslatorService } from "@core/translator/translator.service";
-import { flatMap, tap } from "rxjs/operators";
-import { ActivatedRoute, Router } from "@angular/router";
-import { ToasterConfig, ToasterService } from "angular2-toaster";
-import { DefaultResponse } from "@shared/viewModel/default-response.model";
-import { Observable } from "rxjs";
-import { UserProfile } from "@shared/viewModel/userProfile.model";
-import { UserService } from "@shared/services/user.service";
-import { ResetPassword } from "@shared/viewModel/reset-password.model";
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { TranslatorService } from '@core/translator/translator.service';
+import { UserService } from '@shared/services/user.service';
+import { ProblemDetails } from '@shared/viewModel/default-response.model';
+import { ResetPassword } from '@shared/viewModel/reset-password.model';
+import { UserProfile } from '@shared/viewModel/userProfile.model';
+import { ToasterConfig, ToasterService } from 'angular2-toaster';
+import * as jsonpatch from 'fast-json-patch';
+import { throwError } from 'rxjs';
+import { flatMap, tap } from 'rxjs/operators';
 
 
 @Component({
@@ -30,11 +31,12 @@ export class UserEditComponent implements OnInit {
     public bsConfig = {
         containerClass: 'theme-angle'
     };
-    public showButtonLoading: boolean;
+    public showButtonLoading: boolean = true;
 
     public shouldChangePass: boolean = false;
     public shouldChangeUserData: boolean = true;
     private username: string;
+    patchObserver: jsonpatch.Observer<UserProfile>;
 
     constructor(
         private route: ActivatedRoute,
@@ -44,14 +46,21 @@ export class UserEditComponent implements OnInit {
         public toasterService: ToasterService) { }
 
     public ngOnInit() {
-        this.route.params.pipe(tap(p => this.username = p["username"])).pipe(flatMap(p => this.userService.getDetails(p["username"]))).subscribe(result => {
-            this.model = result.data;
-            if (this.model.lockoutEnd != null)
-                this.model.lockoutEnd = new Date(this.model.lockoutEnd);
-        });
+        this.route.params
+            .pipe(tap(p => this.username = p["username"]),
+                flatMap(p => this.userService.getDetails(p["username"])),
+                tap(user => this.patchObserver = jsonpatch.observe(user))
+            ).subscribe(result => {
+                this.model = result;
+                this.showButtonLoading = false;
+                if (this.model.lockoutEnd != null)
+                    this.model.lockoutEnd = new Date(this.model.lockoutEnd);
+            }, err => {
+                this.router.navigate(['/users']);
+            });
         this.errors = [];
         this.resetPassword = new ResetPassword();
-        this.showButtonLoading = false;
+        
     }
 
     public update() {
@@ -60,15 +69,13 @@ export class UserEditComponent implements OnInit {
         this.errors = [];
         try {
 
-            this.userService.update(this.model).subscribe(
-                registerResult => {
-                    if (registerResult.data) {
-                        this.showSuccessMessage();
-                        this.router.navigate(["/users"]);
-                    }
+            this.userService.patch(this.username, jsonpatch.generate(this.patchObserver)).subscribe(
+                () => {
+                    this.showSuccessMessage();
+                    this.router.navigate(["/users"]);
                 },
                 err => {
-                    this.errors = DefaultResponse.GetErrors(err).map(a => a.value);
+                    this.errors = ProblemDetails.GetErrors(err).map(a => a.value);
                     this.showButtonLoading = false;
                 }
             );
@@ -76,35 +83,24 @@ export class UserEditComponent implements OnInit {
             this.errors = [];
             this.errors.push("Unknown error while trying to update");
             this.showButtonLoading = false;
-            return Observable.throw("Unknown error while trying to update");
+            return throwError("Unknown error while trying to update");
         }
-
     }
 
     public resetPass() {
 
         this.showButtonLoading = true;
         this.errors = [];
-        try {
-            this.resetPassword.username = this.username;
-            this.userService.resetPassword(this.resetPassword).subscribe(
-                registerResult => {
-                    if (registerResult.data) {
-                        this.showSuccessMessage();
-                        this.router.navigate(["/users"]);
-                    }
-                },
-                err => {
-                    this.errors = DefaultResponse.GetErrors(err).map(a => a.value);
-                    this.showButtonLoading = false;
-                }
-            );
-        } catch (error) {
-            this.errors = [];
-            this.errors.push("Unknown error while trying to update");
-            this.showButtonLoading = false;
-            return Observable.throw("Unknown error while trying to update");
-        }
+        this.userService.resetPassword(this.username, this.resetPassword).subscribe(
+            () => {
+                this.showSuccessMessage();
+                this.router.navigate(["/users"]);
+            },
+            err => {
+                this.errors = ProblemDetails.GetErrors(err).map(a => a.value);
+                this.showButtonLoading = false;
+            }
+        );
 
     }
 

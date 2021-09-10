@@ -1,19 +1,27 @@
-import { NgModule, Optional, SkipSelf, ModuleWithProviders } from "@angular/core";
+import { HttpClientModule } from '@angular/common/http';
+import { ModuleWithProviders, NgModule, Optional, SkipSelf } from '@angular/core';
+import { environment } from '@env/environment';
+import { VersionService } from '@shared/services/version.service';
+import {
+    AuthConfig,
+    JwksValidationHandler,
+    OAuthModule,
+    OAuthModuleConfig,
+    OAuthStorage,
+    ValidationHandler,
+} from 'angular-oauth2-oidc';
 
-import { SettingsService } from "./settings/settings.service";
-import { ThemesService } from "./themes/themes.service";
-import { TranslatorService } from "./translator/translator.service";
-import { MenuService } from "./menu/menu.service";
-import { throwIfAlreadyLoaded } from "./module-import-guard";
-import { AuthGuardWithForcedLogin } from "./auth/auth-guard-with-forced-login.service";
-import { AuthService } from "./auth/auth.service";
-import { OAuthModule, AuthConfig, OAuthModuleConfig, ValidationHandler, JwksValidationHandler, OAuthStorage } from "angular-oauth2-oidc";
-import { HttpClientModule } from "@angular/common/http";
-import { authModuleConfig } from "./auth/auth-module-config";
-import { AuthGuard } from "./auth/auth-guard.service";
-import { authConfig } from "./auth/auth-config";
-import { authProdConfig } from "./auth/auth-config.prod";
-import { environment } from "@env/environment";
+import { authProdConfig } from './auth/auth-config.prod';
+import { AuthGuardAuthenticadeOnly } from './auth/auth-guard-authenticated-only.service';
+import { AuthGuardOnlyAdmin } from './auth/auth-guard-only-admin.service';
+import { authModuleConfig } from './auth/auth-module-config';
+import { AuthService } from './auth/auth.service';
+import { MenuService } from './menu/menu.service';
+import { throwIfAlreadyLoaded } from './module-import-guard';
+import { SettingsService } from './settings/settings.service';
+import { ThemesService } from './themes/themes.service';
+import { TranslatorService } from './translator/translator.service';
+import { authConfig } from './auth/auth-config';
 
 export function storageFactory(): OAuthStorage {
     return localStorage;
@@ -27,12 +35,13 @@ export function storageFactory(): OAuthStorage {
     ],
     providers: [
         SettingsService,
+        VersionService,
         ThemesService,
         TranslatorService,
         MenuService,
         AuthService,
-        AuthGuard,
-        AuthGuardWithForcedLogin,
+        AuthGuardOnlyAdmin,
+        AuthGuardAuthenticadeOnly,
     ],
     declarations: [
     ],
@@ -40,13 +49,12 @@ export function storageFactory(): OAuthStorage {
     ]
 })
 export class CoreModule {
-    static forRoot(): ModuleWithProviders {
+    static forRoot(): ModuleWithProviders<CoreModule> {
         return {
             ngModule: CoreModule,
             providers: [
                 { provide: AuthConfig, useValue: authProdConfig },
                 { provide: OAuthModuleConfig, useValue: authModuleConfig },
-                { provide: ValidationHandler, useClass: JwksValidationHandler },
                 { provide: OAuthStorage, useFactory: storageFactory },
             ]
         };

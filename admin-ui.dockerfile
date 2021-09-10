@@ -1,6 +1,6 @@
 # base image
-FROM node:12.7-alpine as builder
-
+FROM node:13.12-alpine as builder
+ARG env=docker
 # install and cache app dependencies
 COPY ["src/Frontend/Jp.AdminUI/package.json", "./"]
 COPY ["src/Frontend/Jp.AdminUI/package-lock.json", "./"]
@@ -10,21 +10,22 @@ COPY ["src/Frontend/Jp.AdminUI/package-lock.json", "./"]
 RUN npm ci && mkdir /app && mv ./node_modules ./app/
 
 WORKDIR /app
-
 # add app
 COPY ["src/Frontend/Jp.AdminUI/", "/app"]
 
 # rebuild node
-RUN npm rebuild node-sass
+RUN cat src/environments/environment.${env}.ts
+# RUN npm rebuild node-sass
 # generate build
-RUN npm run ng build -- --configuration=docker
+RUN npm i
+RUN npm run ng build -- --configuration=${env}
 
 ##################
 ### production ###
 ##################
 
 # base image
-FROM nginx:1.17.2-alpine
+FROM nginx:alpine
 
 ## Remove default nginx website
 RUN rm -rf /usr/share/nginx/html/*
@@ -32,7 +33,6 @@ RUN rm -rf /usr/share/nginx/html/*
 # copy artifact build from the 'build environment'
 COPY --from=builder /app/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
-
 
 # expose port 80
 EXPOSE 80/tcp

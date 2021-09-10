@@ -1,11 +1,14 @@
-import { Component, OnInit, ViewEncapsulation } from "@angular/core";
-import { TranslatorService } from "@core/translator/translator.service";
-import { ClientService } from "@app/clients/clients.service";
-import { NewClient } from "@shared/viewModel/client.model";
-import { Router } from "@angular/router";
-import { ToasterConfig, ToasterService } from "angular2-toaster";
-import { DefaultResponse } from "@shared/viewModel/default-response.model";
-import { Observable } from "rxjs";
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Router } from '@angular/router';
+import { ClientService } from '@app/clients/clients.service';
+import { SettingsService } from '@core/settings/settings.service';
+import { TranslatorService } from '@core/translator/translator.service';
+import { NewClient } from '@shared/viewModel/client.model';
+import { ProblemDetails } from '@shared/viewModel/default-response.model';
+import { FileViewModel } from '@shared/viewModel/file.model';
+import { ToasterConfig, ToasterService } from 'angular2-toaster';
+import { ImageCroppedEvent } from 'ngx-image-cropper';
+import { Observable } from 'rxjs';
 
 
 @Component({
@@ -30,11 +33,19 @@ export class ClientAddComponent implements OnInit {
         containerClass: 'theme-angle'
     };
 
+    // Image settings
+    public imageChangedEvent: any = '';
+    public fileData: ImageCroppedEvent;
+    public croppedImage: any = '';
+    public showCropper = false;
+    public file: any;
+
     constructor(
         private router: Router,
         public translator: TranslatorService,
         private clientService: ClientService,
-        public toasterService: ToasterService) { }
+        public toasterService: ToasterService,
+        public settings: SettingsService) { }
 
     public ngOnInit() {
         this.errors = [];
@@ -48,33 +59,55 @@ export class ClientAddComponent implements OnInit {
         });
     }
 
-    public selectClient(type: number) { 
-        this.model.clientType = type; 
+    public selectClient(type: number) {
+        this.model.clientType = type;
     }
 
 
     public save() {
         this.showButtonLoading = true;
-        try {
-            this.clientService.save(this.model).subscribe(
-                registerResult => {
-                    if (registerResult.data) {
-                        this.showSuccessMessage();
-                        this.router.navigate(['/clients/edit', this.model.clientId]);
-                    }
-                    this.showButtonLoading = false;
-                },
-                err => {
-                    this.errors = DefaultResponse.GetErrors(err).map(a => a.value);
-                    this.showButtonLoading = false;
-                }
-            );
-        } catch (error) {
-            this.errors = [];
-            this.errors.push("Unknown error while trying to register");
-            this.showButtonLoading = false;
-            return Observable.throw("Unknown error while trying to register");
+        if(this.fileData != null){
+            this.model.logo = new FileViewModel(this.file.name, this.file.type, this.fileData.base64.split(',')[1]);
         }
+        this.clientService.save(this.model).subscribe(
+            registerResult => {
+                if (registerResult) {
+                    this.showSuccessMessage();
+                    this.router.navigate(['/clients', this.model.clientId, 'edit']);
+                }
+                this.showButtonLoading = false;
+            },
+            err => {
+                this.errors = ProblemDetails.GetErrors(err).map(a => a.value);
+                this.showButtonLoading = false;
+            }
+        );
+
+    }
+
+
+    fileChangeEvent(event: any): void {
+        if (event == null || event.target == null)
+            return;
+
+        const fileToUpload = event.target.files.item(0);
+        this.file = fileToUpload;
+        const reader = new FileReader();
+
+        reader.readAsDataURL(fileToUpload);
+
+        this.imageChangedEvent = event;
+        this.showCropper = true;
+    }
+    imageCropped(event: ImageCroppedEvent) {
+        this.fileData = event;
+        this.croppedImage = event.base64;
+    }
+    imageLoaded() {
+        this.showCropper = true;
+    }
+    loadImageFailed() {
+        // show message
     }
 
 }

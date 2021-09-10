@@ -1,7 +1,10 @@
 export class EventHistoryData {
-    public Action: string;
-    public Id: string;
-    public When: string;
-    public Who: string;
-    public Details: string;
+    public category: string;
+    public action: string;
+    public aggregate: string;
+    public when: string;
+    public who: string;
+    public details: string;
+    public ip: string;
+    public show: boolean;
 }

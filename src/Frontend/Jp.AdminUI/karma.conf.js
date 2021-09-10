@@ -2,15 +2,19 @@
 // https://karma-runner.github.io/1.0/config/configuration-file.html
 
 module.exports = function (config) {
+  const puppeteer = require('puppeteer');
+  process.env.CHROME_BIN = puppeteer.executablePath();
+
   config.set({
-    basePath: './',
-    frameworks: ['jasmine', '@angular/cli'],
+    basePath: '',
+    frameworks: ['jasmine', '@angular-devkit/build-angular'],
     plugins: [
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
       require('karma-jasmine-html-reporter'),
       require('karma-coverage-istanbul-reporter'),
-      require('@angular/cli/plugins/karma')
+      require('@angular-devkit/build-angular/plugins/karma'),
+      require('karma-junit-reporter')
     ],
     client:{
       clearContext: false // leave Jasmine Spec Runner output visible in browser
@@ -18,33 +22,28 @@ module.exports = function (config) {
     files: [
       { pattern: './src/test.ts', watched: false },
       { pattern: 'src/assets/**/*', watched: false, included: false, served: true },
+      { pattern: 'src/assets/i18n/*.json', watched: false, included: false, served: true },
     ],
     proxies: {
       '/assets/': '/base/src/assets/'
     },
-    preprocessors: {
-      './src/test.ts': ['@angular/cli']
-    },
-    mime: {
-      'text/x-typescript': ['ts','tsx']
-    },
-    coverageIstanbulReporter: {
-      reports: [ 'html', 'lcovonly' ],
-      fixWebpackSourcePaths: true
-    },
     angularCli: {
       environment: 'dev'
     },
-    reporters: ['progress', 'kjhtml'],
+    coverageIstanbulReporter: {
+      dir: require('path').join(__dirname, 'coverage'), reports: [ 'html', 'lcovonly', 'text-summary', 'cobertura' ],
+      fixWebpackSourcePaths: true
+    },
+    reporters: ['progress', 'kjhtml', 'junit'],
+    junitReporter: {
+      outputDir: '../junit'
+    },
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
     autoWatch: true,
-    browsers: ['Chrome'],
+    browsers: ['ChromeHeadless'],
     singleRun: false,
-    captureTimeout: 60000, // it was already there
-    browserDisconnectTimeout : 60000,
-    browserDisconnectTolerance : 1,
-    browserNoActivityTimeout : 60000 //by default 10000
+    restartOnFileChange: true
   });
 };

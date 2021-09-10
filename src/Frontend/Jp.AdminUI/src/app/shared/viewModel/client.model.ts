@@ -1,4 +1,5 @@
-import { Claim } from "./claim.model";
+import { Claim } from './claim.model';
+import { FileViewModel } from './file.model';
 
 export class ClientSecret {
     constructor() {
@@ -35,7 +36,6 @@ export class KeyValuePair {
 
 
 export class ClientProperty {
-    id: number;
     clientId: string;
     key: string;
     value: string;
@@ -48,6 +48,8 @@ export class NewClient {
     logoUri: string;
     description: string;
     clientType: number;
+    postLogoutRedirectUris: string;
+    logo: FileViewModel;
 }
 
 export class Client {
@@ -94,9 +96,10 @@ export class Client {
     pairWiseSubjectSalt: string;
     allowedCorsOrigins: string[];
     properties: ClientProperty[];
-    oldClientId: string;
     userCodeType: string;
     deviceCodeLifetime: number;
+    userSsoLifetime: number;
+    logo: FileViewModel;
     
     public static isValid(client: Client, errors: string[]): boolean {
         errors.length = 0;

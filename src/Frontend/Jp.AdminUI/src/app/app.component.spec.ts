@@ -1,15 +1,16 @@
+import { APP_BASE_HREF } from '@angular/common';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { async, TestBed } from '@angular/core/testing';
+import { TranslateModule } from '@ngx-translate/core';
+import { ToasterModule } from 'angular2-toaster';
+
+import { AppComponent } from './app.component';
+import { RoutesModule } from './app.routing.module';
+import { CoreModule } from './core/core.module';
+import { LayoutModule } from './shared/layout/layout.module';
+import { SharedModule } from './shared/shared.module';
+
 /* tslint:disable:no-unused-variable */
-
-import { TestBed, async} from "@angular/core/testing";
-import { AppComponent } from "./app.component";
-import { TranslateModule } from "@ngx-translate/core";
-
-import { CoreModule } from "./core/core.module";
-import { LayoutModule } from "./shared/layout/layout.module";
-import { SharedModule } from "./shared/shared.module";
-import { APP_BASE_HREF } from "@angular/common";
-import { RoutesModule } from "./app.routing.module";
-import { HttpClientModule } from "@angular/common/http";
 
 describe("App: JpProject", () => {
     beforeEach(() => {
@@ -21,11 +22,12 @@ describe("App: JpProject", () => {
                 AppComponent
             ],
             imports: [
-                HttpClientModule,
+                HttpClientTestingModule,
                 TranslateModule.forRoot(),
                 CoreModule,
                 LayoutModule,
                 SharedModule,
+                ToasterModule.forRoot(),
                 RoutesModule
             ],
             providers: [

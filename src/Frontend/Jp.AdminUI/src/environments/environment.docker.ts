@@ -4,9 +4,13 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 export const environment = {
-  production: false,
-  ResourceServer: "http://localhost:5003/",
-  IssuerUri:  "http://jpproject:5000",
-  RequireHttps: false,
-  Uri: "http://localhost:4300"
-};
+    production: false,
+    GoogleClientId: "",
+    FacebookClientId: "",
+    ResourceServer: "http://localhost:5002/",
+    IssuerUri:  "http://jpproject-sso:5001",
+    RequireHttps: false,
+    Uri: "http://localhost:4300",
+    defaultTheme: "C",
+    version: "3.0.3"
+  };

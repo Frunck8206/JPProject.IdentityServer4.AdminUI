@@ -16,6 +16,12 @@ jobs:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+      - task: UseDotNet@2
+        displayName: 'Install .net core 3.1'
+        inputs:
+          packageType: 'sdk'
+          version: '3.1.100'
+
       - task: DotNetCoreCLI@2
         displayName: '.NET Core - Restore'
         inputs:
@@ -50,24 +56,46 @@ jobs:
           workingDir: src/Frontend/Jp.AdminUI
 
       - task: Npm@1
-        displayName: 'NPM - Install - UserManagement'
+        displayName: 'NPM - Test - AdminUI'
         inputs:
-          command: install
-          workingDir: src/Frontend/Jp.UserManagement
+          command: custom
+          customCommand: 'run test -- --watch=false --code-coverage'
+          workingDir: src/Frontend/Jp.AdminUI
+
+      # - task: Npm@1
+      #   displayName: 'NPM - E2E - AdminUI'
+      #   inputs:
+      #     command: custom
+      #     customCommand: 'run e2e'
+      #     workingDir: src/Frontend/Jp.AdminUI 
 
       - task: Npm@1
         displayName: 'NPM - Build Prod - AdminUI'
         inputs:
           command: custom
-          customCommand: 'run build -- --base-href=/admin-ui/'
+          customCommand: 'run build'
           workingDir: src/Frontend/Jp.AdminUI
 
-      - task: Npm@1
-        displayName: 'NPM - Build Prod - UserManagement'
+      - task: PublishCodeCoverageResults@1
+        displayName: 'Publish code coverage Angular results'
         inputs:
-          command: custom
-          customCommand: 'run build -- --base-href=/user-management/'
-          workingDir: src/Frontend/Jp.UserManagement
+          codeCoverageTool: Cobertura
+          summaryFileLocation: './src/Frontend/Jp.AdminUI/coverage/cobertura-coverage.xml'
+          reportDirectory: './src/Frontend/Jp.AdminUI/coverage/'
+
+      - task: PublishTestResults@2
+        displayName: 'Publish Angular test results'
+        inputs:
+          testRunTitle: Angular
+          testResultsFormat: JUnit
+          testResultsFiles: "**/TESTS*.xml"
+          
+      - task: PublishTestResults@2
+        displayName: 'Publish Angular E2E test results'
+        inputs:
+          testRunTitle: Angular_E2E
+          testResultsFormat: JUnit
+          testResultsFiles: "**/junit*.xml"             
 
   - job: 'docker'
     displayName: 'Docker files'
@@ -84,16 +112,4 @@ jobs:
         displayName: 'Docker - Build - API'
         inputs:
           command: 'build'
-          Dockerfile: '**/api.dockerfile'
-
-      - task: Docker@2
-        displayName: 'Docker - Build - UserManagement'
-        inputs:
-          command: 'build'
-          Dockerfile: '**/ui-user-management.dockerfile'
-
-      - task: Docker@2
-        displayName: 'Docker - Build - SSO'
-        inputs:
-          command: 'build'
-          Dockerfile: '**/sso.dockerfile'
+          Dockerfile: '**/api-light.dockerfile'
